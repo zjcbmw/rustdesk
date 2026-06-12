@@ -48,10 +48,16 @@ jobs:
       - name: Setup vcpkg
         shell: powershell
         run: |
+          if (Test-Path C:\vcpkg) {
+            Remove-Item -Recurse -Force C:\vcpkg
+          }
           git clone https://github.com/microsoft/vcpkg C:\vcpkg
+          cd C:\vcpkg
+          git checkout 120deac3062162151622ca4860575a33844ba10b
           C:\vcpkg\bootstrap-vcpkg.bat
           echo "VCPKG_ROOT=C:\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
-          C:\vcpkg\vcpkg.exe install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static
+          cd $env:GITHUB_WORKSPACE
+          C:\vcpkg\vcpkg.exe install --triplet x64-windows-static
 
       - name: Build RustDesk Windows exe
         shell: powershell
