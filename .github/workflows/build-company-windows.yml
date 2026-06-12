@@ -1,0 +1,65 @@
+name: Build Company RustDesk Windows
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+
+    env:
+      RUST_VERSION: "1.75"
+      FLUTTER_VERSION: "3.24.5"
+      LLVM_VERSION: "15.0.6"
+      VCPKG_DEFAULT_TRIPLET: x64-windows-static
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Prepare Flutter Windows
+        shell: powershell
+        run: |
+          flutter doctor -v
+          flutter config --enable-windows-desktop
+          flutter precache --windows
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@1.75
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Install LLVM
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: ${{ env.LLVM_VERSION }}
+
+      - name: Setup vcpkg
+        shell: powershell
+        run: |
+          git clone https://github.com/microsoft/vcpkg C:\vcpkg
+          C:\vcpkg\bootstrap-vcpkg.bat
+          echo "VCPKG_ROOT=C:\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
+          C:\vcpkg\vcpkg.exe install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static
+
+      - name: Build RustDesk Windows exe
+        shell: powershell
+        run: |
+          python .\build.py --portable --flutter --skip-portable-pack
+
+      - name: Upload exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: company-rustdesk-windows-x64
+          path: flutter/build/windows/x64/runner/Release/
