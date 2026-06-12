@@ -79,72 +79,109 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   Widget buildLeftPane(BuildContext context) {
     final isIncomingOnly = bind.isIncomingOnly();
     final isOutgoingOnly = bind.isOutgoingOnly();
+    final textColor = Theme.of(context).textTheme.titleLarge?.color;
+    final secondaryText = textColor?.withOpacity(0.62);
+
     final children = <Widget>[
-      if (!isOutgoingOnly) buildPresetPasswordWarning(),
-      if (bind.isCustomClient())
-        Align(
-          alignment: Alignment.center,
-          child: loadPowered(context),
+      const SizedBox(height: 24),
+      Align(alignment: Alignment.center, child: loadLogo()),
+      const SizedBox(height: 18),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '允许远程协助',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '把下面的 ID 和临时密码提供给已授权的同事，便于远程办公协作。',
+              style: TextStyle(fontSize: 13, height: 1.35, color: secondaryText),
+            ),
+          ],
         ),
-      Align(
-        alignment: Alignment.center,
-        child: loadLogo(),
       ),
-      buildTip(context),
+      const SizedBox(height: 20),
+      if (!isOutgoingOnly) buildPresetPasswordWarning(),
       if (!isOutgoingOnly) buildIDBoard(context),
       if (!isOutgoingOnly) buildPasswordBoard(context),
-      FutureBuilder<Widget>(
-        future: Future.value(
-            Obx(() => buildHelpCards(stateGlobal.updateUrl.value))),
-        builder: (_, data) {
-          if (data.hasData) {
-            if (isIncomingOnly) {
-              if (isInHomePage()) {
-                Future.delayed(Duration(milliseconds: 300), () {
-                  _updateWindowSize();
-                });
-              }
-            }
-            return data.data!;
-          } else {
-            return const Offstage();
+      const SizedBox(height: 12),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: MyTheme.border.withOpacity(0.55)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.verified_user_outlined,
+                      size: 18, color: MyTheme.accent),
+                  SizedBox(width: 8),
+                  Text(
+                    '企业专用服务器',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'ID Server：82.156.75.4\nRelay：82.156.75.4:21117',
+                style: TextStyle(fontSize: 12, height: 1.35, color: secondaryText),
+              ),
+            ],
+          ),
+        ),
+      ),
+      const SizedBox(height: 12),
+      OnlineStatusWidget(
+        onSvcStatusChanged: () {
+          if (isIncomingOnly && isInHomePage()) {
+            Future.delayed(Duration(milliseconds: 300), () {
+              _updateWindowSize();
+            });
           }
         },
-      ),
+      ).marginOnly(bottom: 6, right: 6),
       buildPluginEntry(),
     ];
+
     if (isIncomingOnly) {
       children.addAll([
         Divider(),
-        OnlineStatusWidget(
-          onSvcStatusChanged: () {
-            if (isInHomePage()) {
-              Future.delayed(Duration(milliseconds: 300), () {
-                _updateWindowSize();
-              });
-            }
-          },
-        ).marginOnly(bottom: 6, right: 6)
       ]);
     }
-    final textColor = Theme.of(context).textTheme.titleLarge?.color;
+
     return ChangeNotifierProvider.value(
       value: gFFI.serverModel,
       child: Container(
-        width: isIncomingOnly ? 280.0 : 200.0,
+        width: isIncomingOnly ? 330.0 : 315.0,
         color: Theme.of(context).colorScheme.background,
         child: Stack(
           children: [
             Column(
               children: [
-                SingleChildScrollView(
-                  controller: _leftPaneScrollController,
-                  child: Column(
-                    key: _childKey,
-                    children: children,
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _leftPaneScrollController,
+                    child: Column(
+                      key: _childKey,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: children,
+                    ),
                   ),
                 ),
-                Expanded(child: Container())
               ],
             ),
             if (isOutgoingOnly)
@@ -182,6 +219,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
 
   buildRightPane(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.fromLTRB(24, 18, 24, 18),
       color: Theme.of(context).scaffoldBackgroundColor,
       child: ConnectionPage(),
     );
